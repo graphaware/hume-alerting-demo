@@ -1,0 +1,168 @@
+version: '3.7'
+services:
+  neo4j:
+    image: docker.graphaware.com/public/neo4j:4.2.5-enterprise
+    ports:
+      - "${NEO4J_HTTP_PORT:-7474}:7474"
+      - "${NEO4J_BOLT_PORT:-7687}:7687"
+    environment:
+      - NEO4J_ACCEPT_LICENSE_AGREEMENT=yes
+      - NEO4J_AUTH=neo4j/${NEO4J_PASSWORD:-password}
+      - NEO4J_dbms_memory_heap_maxSize=4G
+      - NEO4J_dbms_connector_bolt_advertised__address=${HUME_ADVERTISED_ADDRESS:-localhost}:${NEO4J_PORT:-7687}
+      - NEO4JLABS_PLUGINS=["apoc","graph-data-science"]
+      - NEO4J_apoc_trigger_enabled=true
+    volumes:
+      - "hume_neo4j_data:/data"
+      - "hume_neo4j_plugins:/plugins"
+  orchestra:
+    image: docker.graphaware.com/internal/hume-orchestra:${HUME_VERSION}
+    ports:
+      - 8100:8100
+      - 8666:8666
+    volumes:
+      - ${HUME_PUBLIC_DIR:-./public}:/data
+  postgres:
+    image: docker.graphaware.com/public/postgres:12.0
+    environment:
+      POSTGRES_PASSWORD: ${HUME_DB_PASSWORD:-pgsqls3cr3t}
+      POSTGRES_USER: ${HUME_DB_USER:-hume}
+    ports:
+      - 5432:5432
+    volumes:
+      - "hume_postgres_data:/var/lib/postgresql/data"
+  postgres-controller:
+    image: postgres:12
+    environment:
+      POSTGRES_USER: alert-controller
+      POSTGRES_PASSWORD: alert
+    command: -p 5433
+    ports:
+      - 5433:5433
+    networks:
+      - default
+    volumes:
+      - "hume_controller_data:/var/lib/postgresql/data"
+  postgres-operator:
+    image: postgres:12
+    environment:
+      POSTGRES_USER: operator
+      POSTGRES_PASSWORD: operator
+    command: -p 5434
+    ports:
+      - 5434:5434
+    networks:
+      - default
+    volumes:
+      - "hume_operator_data:/var/lib/postgresql/data"
+  api:
+    image: docker.graphaware.com/internal/hume-api:${HUME_VERSION}
+    ports:
+      - "8080:8080"
+      - "8001:8001"
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/${HUME_DB_USER:-hume}
+      - SPRING_DATASOURCE_USERNAME=${HUME_DB_USER:-hume}
+      - SPRING_DATASOURCE_PASSWORD=${HUME_DB_PASSWORD:-pgsqls3cr3t}
+      - hume.orchestra.uri=http://orchestra:8100
+      - com.hume.testing.unsecure.enabled=true
+      - SECURITY_SIGNUP_ENABLED=true
+      - HUME_FEATURE_ALERTS_ENABLED=true
+      - HUME_FEATURE_COLLECTIONS_ENABLED=true
+      - HUME_ALERTING_URI=http://alerting-controller:8200
+      - alerting.client.enabled=true
+    command: ["java","-Djava.security.egd=file:/dev/./urandom","-Dagentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=8001","-jar","/app.jar"]
+  web:
+    image: docker.graphaware.com/internal/hume-web:${HUME_VERSION}
+    environment:
+      - HUME_API_URL=http://${HUME_ADVERTISED_ADDRESS:-localhost}:${HUME_API_PORT:-8080}
+    ports:
+      - "${HUME_FRONT_PORT:-8081}:80"
+  alerting-controller:
+    image: docker.graphaware.com/internal/hume-alerting-controller:${HUME_VERSION}
+    environment:
+      - BROKERS=kafka:9092
+      - spring.mail.host=mail
+      - spring.mail.port=1025
+      - spring.mail.username=
+      - spring.mail.password=
+      - spring.mail.properties.mail.smtp.auth=false
+      - notifier.mail.from=no-reply@graphaware.com
+      - notifier.mail.to=alerting@graphaware.com
+      - spring.kafka.consumer.bootstrap-servers=kafka:9092
+      - POSTGRES-JDBC=jdbc:postgresql://postgres-controller:5433/alert-controller
+      - POSTGRES-USER=alert-controller
+      - POSTGRES-PASSWORD=alert
+      - scheduling.messenger.type=kafka
+    ports:
+      - 8200:8200
+    depends_on:
+      - postgres-controller
+  alerting-operator:
+    image: docker.graphaware.com/internal/hume-alerting-operator:${HUME_VERSION}
+    environment:
+      - BROKERS=kafka:9092
+      - ZKNODES=zookeeper:2181
+      - SCHEDULERTOPIC=scheduler
+      - NOTIFICATIONTOPIC=notification
+      - ACTIONTOPIC=alerting-actions
+      - POSTGRES-JDBC=jdbc:postgresql://postgres-operator:5434/operator?rewriteBatchedStatements=true
+      - POSTGRES-USER=operator
+      - POSTGRES-PASSWORD=operator
+      - spring.cloud.stream.kafka.binder.consumer-properties.max-poll-records=1
+      - spring.cloud.stream.kafka.binder.consumer-properties.max-poll-interval-ms=600000000
+      - MAX-TRANSACTION-RETRY-TIME-SEC=0
+      - CONNECTION-ACQUISITION-TIMEOUT-SEC=5
+      - CONNECTION-TIMEOUT-SEC=0
+      - SLOT-BATCHSIZE=50
+      - GLOBAL-BATCHSIZE=50
+      - MAX-POLL-RECORDS=1
+      - MAX-POLL-INTERVAL-MS=5000
+    depends_on: 
+      - postgres-operator
+  zookeeper:
+    image: bitnami/zookeeper:3-debian-10
+    ports:
+      - 2181:2181
+    volumes:
+      - zookeeper_data:/bitnami
+    environment:
+      - ALLOW_ANONYMOUS_LOGIN=yes
+  kafka:
+    image: bitnami/kafka:2-debian-10
+    ports:
+      - 9092:9092
+    volumes:
+      - kafka_data:/bitnami
+    environment:
+      - KAFKA_ADVERTISED_HOST_NAME=kafka
+      - KAFKA_CFG_ZOOKEEPER_CONNECT=zookeeper:2181
+      - ALLOW_PLAINTEXT_LISTENER=yes
+      - KAFKA_CFG_LISTENERS=PLAINTEXT://:9092
+      - KAFKA_CFG_ADVERTISED_LISTENERS=PLAINTEXT://kafka:9092
+      #- KAFKA_LISTENER_SECURITY_PROTOCOL_MAP=INTERNAL:PLAINTEXT,EXTERNAL:PLAINTEXT
+      #- KAFKA_CFG_ADVERTISED_LISTENERS=INTERNAL://kafka:29092,EXTERNAL://localhost:9092
+    depends_on:
+      - zookeeper
+  kafdrop:
+    image: obsidiandynamics/kafdrop
+    ports:
+      - 9100:9000
+    environment:
+      - KAFKA_BROKERCONNECT=kafka:9092
+      - JVM_OPTS=-Xms32M -Xmx64M
+    depends_on:
+      - kafka
+  mail:
+    image: docker.graphaware.com/mirror/mailhog/mailhog:v1.0.0
+    ports:
+      - 1025:1025
+      - 8025:8025
+volumes:
+  hume_postgres_data:
+  hume_controller_data:
+  hume_operator_data:
+  hume_neo4j_data:
+  hume_neo4j_plugins:
+  zookeeper_data:
+  kafka_data:
