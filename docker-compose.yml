@@ -1,7 +1,7 @@
 version: '3.7'
 services:
   neo4j:
-    image: docker.graphaware.com/public/neo4j:4.2.5-enterprise
+    image: docker.graphaware.com/public/neo4j:${NEO4J_VERSION}
     ports:
       - "${NEO4J_HTTP_PORT:-7474}:7474"
       - "${NEO4J_BOLT_PORT:-7687}:7687"
@@ -117,7 +117,8 @@ services:
       - SLOT-BATCHSIZE=50
       - GLOBAL-BATCHSIZE=50
       - MAX-POLL-RECORDS=1
-      - MAX-POLL-INTERVAL-MS=5000
+      - MAX-POLL-INTERVAL-MS=120000
+      - neo4j.transaction-timeout-sec=60
     depends_on: 
       - postgres-operator
   zookeeper:
@@ -140,8 +141,6 @@ services:
       - ALLOW_PLAINTEXT_LISTENER=yes
       - KAFKA_CFG_LISTENERS=PLAINTEXT://:9092
       - KAFKA_CFG_ADVERTISED_LISTENERS=PLAINTEXT://kafka:9092
-      #- KAFKA_LISTENER_SECURITY_PROTOCOL_MAP=INTERNAL:PLAINTEXT,EXTERNAL:PLAINTEXT
-      #- KAFKA_CFG_ADVERTISED_LISTENERS=INTERNAL://kafka:29092,EXTERNAL://localhost:9092
     depends_on:
       - zookeeper
   kafdrop:
