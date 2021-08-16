@@ -1,7 +1,7 @@
 version: '3.7'
 services:
   neo4j:
-    image: docker.graphaware.com/public/neo4j:${NEO4J_VERSION}
+    image: docker.graphaware.com/internal/neo4j:${NEO4J_VERSION}
     ports:
       - "${NEO4J_HTTP_PORT:-7474}:7474"
       - "${NEO4J_BOLT_PORT:-7687}:7687"
@@ -23,7 +23,7 @@ services:
     volumes:
       - ${HUME_PUBLIC_DIR:-./public}:/data
   postgres:
-    image: docker.graphaware.com/public/postgres:12.0
+    image: docker.graphaware.com/internal/postgres:12.0
     environment:
       POSTGRES_PASSWORD: ${HUME_DB_PASSWORD:-pgsqls3cr3t}
       POSTGRES_USER: ${HUME_DB_USER:-hume}
