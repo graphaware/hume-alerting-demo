@@ -79,7 +79,7 @@ services:
       - com.hume.core.admin.setup.step.admin_creation.name='Auto Admin'
       - com.hume.core.admin.setup.step.admin_creation.password=error
       - com.hume.core.security.license.b64=AFswWTA4BgkqhkiG9w0BBQwwKwQUDNtx44EdMGqIJqqM5pCWdlj9mRUCAhAAAgEQMAwGCCqGSIb3DQIJBQAwHQYJYIZIAWUDBAECBBCdKhmiRO3zaIlaoc2RHpXhBs4ylJxyaqB28b2b78MATcTJgNt+y+Lx3fDsDC8zPYXzY+9GjUpmOA3OYXe/5wqDX9txq6Ey79YNgRKxM0Y20eIfXWFgpm6b1KZREV5utBaAlWTKXhJj9OfSazlymSkBiqXb+J7Jz2ovGyRLzppAavOSr7eurcnrIqRxm8DLjswfzqDRaYwZ3+yWn+5fXsiL4H9XarSEBSGmawFXXbJlgTnMehpqBYy4F/X90Ak23B1GR+x+1PTAqGyHN+G4IzaFRDE6bXD29CuSP/6u5FFoqDO8NAEe4zsERT6kEsM3dduOb14zKuUgly6+yBdylZ4ab71yj12UBd2TP2Ldnsp5PWGBux4/JPcS7hpk0VmFsPkQGIkq7mQF7lOY3LJ6SzW5
-    volumes: 
+    volumes:
       - ./init:/init
     command: ["java","-Djava.security.egd=file:/dev/./urandom","-Dagentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=8001","-jar","/app.jar"]
   web:
@@ -129,7 +129,7 @@ services:
       - MAX-POLL-RECORDS=1
       - MAX-POLL-INTERVAL-MS=120000
       - neo4j.transaction-timeout-sec=60
-    depends_on: 
+    depends_on:
       - postgres-operator
   zookeeper:
     image: bitnami/zookeeper:3-debian-10
@@ -149,8 +149,10 @@ services:
       - KAFKA_ADVERTISED_HOST_NAME=kafka
       - KAFKA_CFG_ZOOKEEPER_CONNECT=zookeeper:2181
       - ALLOW_PLAINTEXT_LISTENER=yes
-      - KAFKA_CFG_LISTENERS=PLAINTEXT://:9092
-      - KAFKA_CFG_ADVERTISED_LISTENERS=PLAINTEXT://kafka:9092
+      - KAFKA_CFG_LISTENERS=INTERNAL://kafka:9093,EXTERNAL://kafka:9092
+      - KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP=INTERNAL:PLAINTEXT,EXTERNAL:PLAINTEXT
+      - KAFKA_CFG_ADVERTISED_LISTENERS=INTERNAL://kafka:9093,EXTERNAL://localhost:9092
+      - KAFKA_CFG_INTER_BROKER_LISTENER_NAME=INTERNAL
     depends_on:
       - zookeeper
   kafdrop:
