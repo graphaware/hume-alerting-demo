@@ -1,7 +1,7 @@
 version: '3.7'
 services:
   neo4j:
-    image: docker.graphaware.com/internal/neo4j:${NEO4J_VERSION}
+    image: docker.graphaware.com/mirror/neo4j:${NEO4J_VERSION}
     ports:
       - "${NEO4J_HTTP_PORT:-7474}:7474"
       - "${NEO4J_BOLT_PORT:-7687}:7687"
@@ -57,6 +57,7 @@ services:
       - "hume_operator_data:/var/lib/postgresql/data"
   api:
     image: docker.graphaware.com/internal/hume-api:${HUME_VERSION}
+    # image: api:cto-deploy
     ports:
       - "8080:8080"
       - "8001:8001"
@@ -71,13 +72,22 @@ services:
       - HUME_FEATURE_COLLECTIONS_ENABLED=true
       - HUME_ALERTING_URI=http://alerting-controller:8200
       - alerting.client.enabled=true
+      - hume.init.directory=/init
+      - INIT_DB_PASSWORD=password
+      - com.hume.core.admin.setup.step.admin_creation.auto=true
+      - com.hume.core.admin.setup.step.admin_creation.username=admin@hume.k8s
+      - com.hume.core.admin.setup.step.admin_creation.name='Auto Admin'
+      - com.hume.core.admin.setup.step.admin_creation.password=error
+      - com.hume.core.security.license.b64=AFswWTA4BgkqhkiG9w0BBQwwKwQUDNtx44EdMGqIJqqM5pCWdlj9mRUCAhAAAgEQMAwGCCqGSIb3DQIJBQAwHQYJYIZIAWUDBAECBBCdKhmiRO3zaIlaoc2RHpXhBs4ylJxyaqB28b2b78MATcTJgNt+y+Lx3fDsDC8zPYXzY+9GjUpmOA3OYXe/5wqDX9txq6Ey79YNgRKxM0Y20eIfXWFgpm6b1KZREV5utBaAlWTKXhJj9OfSazlymSkBiqXb+J7Jz2ovGyRLzppAavOSr7eurcnrIqRxm8DLjswfzqDRaYwZ3+yWn+5fXsiL4H9XarSEBSGmawFXXbJlgTnMehpqBYy4F/X90Ak23B1GR+x+1PTAqGyHN+G4IzaFRDE6bXD29CuSP/6u5FFoqDO8NAEe4zsERT6kEsM3dduOb14zKuUgly6+yBdylZ4ab71yj12UBd2TP2Ldnsp5PWGBux4/JPcS7hpk0VmFsPkQGIkq7mQF7lOY3LJ6SzW5
+    volumes: 
+      - ./init:/init
     command: ["java","-Djava.security.egd=file:/dev/./urandom","-Dagentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=8001","-jar","/app.jar"]
   web:
-    image: docker.graphaware.com/internal/hume-web:${HUME_VERSION}
+    image: docker.graphaware.com/internal/hume-web:2.10.0-build-ginandtonic
     environment:
       - HUME_API_URL=http://${HUME_ADVERTISED_ADDRESS:-localhost}:${HUME_API_PORT:-8080}
     ports:
-      - "${HUME_FRONT_PORT:-8081}:80"
+      - "${HUME_FRONT_PORT:-8081}:8081"
   alerting-controller:
     image: docker.graphaware.com/internal/hume-alerting-controller:${HUME_VERSION}
     environment:
