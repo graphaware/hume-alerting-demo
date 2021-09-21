@@ -1,0 +1,21 @@
+{
+    "kind": "Database",
+    "name": "adar",
+    "dropIfExists": true,
+    "indexes": {
+        "fulltext": [
+            {
+                "labels": [
+                    "Person"
+                ],
+                "properties": [
+                    "name"
+                ],
+                "name": "Person"
+            }
+        ]
+    },
+    "seeds": [
+        "data-gds-adar.cypher"
+    ]
+}

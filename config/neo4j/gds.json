@@ -1,0 +1,24 @@
+{
+    "kind": "Database",
+    "name": "gdsdemos",
+    "dropIfExists": true,
+    "indexes": {
+        "fulltext": [
+        ]
+    },
+    "constraints": {
+        "unique": [
+            {
+                "label": "Movie",
+                "property": "title"
+            },
+            {
+                "label": "Product",
+                "property": "id"
+            }
+        ]
+    },
+    "seeds": [
+        "movies.cypher","products.cypher"
+    ]
+}
