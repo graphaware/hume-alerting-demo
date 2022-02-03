@@ -97,6 +97,7 @@ services:
       - POSTGRES-USER=alert-controller
       - POSTGRES-PASSWORD=alert
       - scheduling.messenger.type=kafka
+      - kafka.topics.prefix=${KAFKA_TOPICS_PREFIX}
     ports:
       - 8200:8200
     depends_on:
@@ -106,9 +107,6 @@ services:
     environment:
       - BROKERS=kafka:9092
       - ZKNODES=zookeeper:2181
-      - SCHEDULERTOPIC=scheduler
-      - NOTIFICATIONTOPIC=notification
-      - ACTIONTOPIC=alerting-actions
       - POSTGRES-JDBC=jdbc:postgresql://postgres-operator:5434/operator?rewriteBatchedStatements=true
       - POSTGRES-USER=operator
       - POSTGRES-PASSWORD=operator
@@ -122,6 +120,7 @@ services:
       - MAX-POLL-RECORDS=1
       - MAX-POLL-INTERVAL-MS=120000
       - neo4j.transaction-timeout-sec=60
+      - kafka.topics.prefix=${KAFKA_TOPICS_PREFIX}
     depends_on:
       - postgres-operator
   zookeeper:
