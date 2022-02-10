@@ -1,10 +1,10 @@
 {
     "kind": "Role",
-    "name": "community",
+    "name": "analyst",
     "dropIfExists": true,
     "privileges": [
       {
-        "graph": "*",
+        "graph": "movies",
         "access": true,
         "rules": [
           {
@@ -12,6 +12,20 @@
             "labels": "*",
             "action": "match",
             "resource": "all_properties",
+            "access": "GRANTED"
+          },
+          {
+            "target": "relationship",
+            "labels": "*",
+            "action": "read",
+            "resource": "*",
+            "access": "GRANTED"
+          },
+          {
+            "target": "relationship",
+            "labels": "*",
+            "action": "traverse",
+            "resource": "*",
             "access": "GRANTED"
           },
           {

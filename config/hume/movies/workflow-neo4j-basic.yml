@@ -4,14 +4,16 @@ metadata:
   name: workflow-neo4j-basic
 spec:
   label: 'Workflow Neo4j Basic'
+  # autostart: true
   components:
     - name: Neo4j Reader
       type: "#Hume.Orchestra.DataSource.Neo4jReader"
       config:
-        query: MATCH (n:Person) RETURN n
+        query: MATCH (n:Person) RETURN n AS data
+        polling_period: 3000
       resource:
         selector:
-          name: neo4j-resource-cto
+          name: neo4j-movies
       to:
         - MessageTransformer
     - name: MessageTransformer

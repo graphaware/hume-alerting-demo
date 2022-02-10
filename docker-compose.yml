@@ -15,13 +15,15 @@ services:
     volumes:
       - "hume_neo4j_data:/data"
       - "hume_neo4j_plugins:/plugins"
-  orchestra:
-    image: docker.graphaware.com/internal/hume-orchestra:${HUME_VERSION}
-    ports:
-      - 8100:8100
-      - 8666:8666
+  neo4j-config-cli:
+    image: graphaware/neo4j-config-cli:1.3.0
+    environment:
+        - NEO4J_USER=neo4j
+        - NEO4J_PASSWORD=password
+        - NEO4J_URI=bolt://neo4j:7687
+        - IMPORT_PATH=/config
     volumes:
-      - ${HUME_PUBLIC_DIR:-./public}:/data
+        - "./config/neo4j-config:/config"
   postgres:
     image: docker.graphaware.com/internal/postgres:12.0
     environment:
@@ -64,19 +66,43 @@ services:
       - SPRING_DATASOURCE_USERNAME=${HUME_DB_USER:-hume}
       - SPRING_DATASOURCE_PASSWORD=${HUME_DB_PASSWORD:-pgsqls3cr3t}
       - hume.orchestra.uri=http://orchestra:8100
-      - com.hume.testing.unsecure.enabled=true
-      - SECURITY_SIGNUP_ENABLED=true
       - HUME_FEATURE_ALERTS_ENABLED=true
       - HUME_FEATURE_COLLECTIONS_ENABLED=true
       - HUME_ALERTING_URI=http://alerting-controller:8200
       - alerting.client.enabled=true
       - com.hume.core.admin.setup.step.admin_creation.auto=true
-      - com.hume.core.admin.setup.step.admin_creation.username=admin@hume.k8s
-      - com.hume.core.admin.setup.step.admin_creation.name='Auto Admin'
-      - com.hume.core.admin.setup.step.admin_creation.password=error
-      - com.hume.core.security.license.b64=AFswWTA4BgkqhkiG9w0BBQwwKwQUZ3c3Vdc7T1sSQVXPBOuT+4CPR6wCAhAAAgEQMAwGCCqGSIb3DQIJBQAwHQYJYIZIAWUDBAECBBABBZqbTalEMWRNeOybK6/WeDutoqBOdF+nWpltLNUWXU5i04sLO7wVW3vdel/V0hO0ytUP8jLJHs4i34/c8SrvqYqQ1wC01V7ynuL2K26LmNDzEySFP2Jv43eRWYjsC+hNgJrYR4PQLrXCHviLZqq5ZQgyVhOlbMKhOIXdfxWx2wMNhBQxoC06Qod73Q263j5LrJMjK/NnqcDawew44RNSXhvPyztJgMPi+dm8DphG+e5P7b1hGbQroA7B1Xg4irWVlgqSOqsGLoi/FdnoysHFMSZ/n8Xdia2dIMWO6aJDOZZE2SyHKMdOvBOzNILRY41pzwc9r5/VuWCrRZWncl3sTmhFAIqeIlhRzPRycm26Gxn8awAteiS4nEwYNZim5YBW3lgPALaUMW3kxzPriyJ7
+      - com.hume.core.admin.setup.step.admin_creation.username=admin@hume.ga
+      - com.hume.core.admin.setup.step.admin_creation.name=Auto Admin
+      - com.hume.core.admin.setup.step.admin_creation.password=password
+      - com.hume.core.security.license.b64=${HUME_LICENCE_KEY}
+      - hume.config-as-code.enabled=true
+      - hume.config-as-code.import-dir=/init
+      - hume.config-as-code.autoload=true
+      - hume.security.encryption.engine=keystore
+      - hume.security.encryption.keystore.file=/opt/hume-keystore
+      - hume.security.encryption.keystore.password=changeit
+      - hume.security.encryption.keystore.secret.alias=secret
+      - GRAPHQL_KEY_TOKEN=${API_KEY_SECRET}
+      - NEO4J_DB_PASSWORD=${NEO4J_PASSWORD}
+    volumes: 
+      - "./config/hume:/init"
+      - "./config/keystore/hume-keystore:/opt/hume-keystore"
+  orchestra:
+    image: docker.graphaware.com/internal/hume-orchestra:${HUME_VERSION}
+    ports:
+      - 8100:8100
+      - 8666:8666
+    environment:
+      - orchestra.startup.workflows.autoload=true
+      - hume.security.encryption.engine=keystore
+      - hume.security.encryption.keystore.file=/opt/hume-keystore
+      - hume.security.encryption.keystore.password=changeit
+      - hume.security.encryption.keystore.secret.alias=secret
+    volumes:
+      - ${HUME_PUBLIC_DIR:-./public}:/data
+      - "./config/keystore/hume-keystore:/opt/hume-keystore"
   web:
-    image: docker.graphaware.com/internal/hume-web:develop
+    image: docker.graphaware.com/internal/hume-web:${HUME_VERSION}
     environment:
       - HUME_API_URL=http://${HUME_ADVERTISED_ADDRESS:-localhost}:${HUME_API_PORT:-8080}
     ports:
@@ -110,6 +136,9 @@ services:
       - POSTGRES-JDBC=jdbc:postgresql://postgres-operator:5434/operator?rewriteBatchedStatements=true
       - POSTGRES-USER=operator
       - POSTGRES-PASSWORD=operator
+      - SCHEDULERTOPIC=scheduler
+      - NOTIFICATIONTOPIC=notification
+      - ACTIONTOPIC=alerting-actions
       - spring.cloud.stream.kafka.binder.consumer-properties.max-poll-records=1
       - spring.cloud.stream.kafka.binder.consumer-properties.max-poll-interval-ms=600000000
       - MAX-TRANSACTION-RETRY-TIME-SEC=0
@@ -121,8 +150,14 @@ services:
       - MAX-POLL-INTERVAL-MS=120000
       - neo4j.transaction-timeout-sec=60
       - kafka.topics.prefix=${KAFKA_TOPICS_PREFIX}
+      - hume.security.encryption.engine=keystore
+      - hume.security.encryption.keystore.file=/opt/hume-keystore
+      - hume.security.encryption.keystore.password=changeit
+      - hume.security.encryption.keystore.secret.alias=secret
     depends_on:
       - postgres-operator
+    volumes:
+      - "./config/keystore/hume-keystore:/opt/hume-keystore"
   zookeeper:
     image: bitnami/zookeeper:3-debian-10
     ports:
