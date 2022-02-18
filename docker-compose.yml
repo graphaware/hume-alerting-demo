@@ -109,6 +109,7 @@ services:
       - "${HUME_FRONT_PORT:-8081}:8081"
   alerting-controller:
     image: docker.graphaware.com/internal/hume-alerting-controller:${HUME_VERSION}
+    # image: controller:coll-update
     environment:
       - BROKERS=kafka:9092
       - spring.mail.host=mail
@@ -122,8 +123,15 @@ services:
       - POSTGRES-JDBC=jdbc:postgresql://postgres-controller:5433/alert-controller
       - POSTGRES-USER=alert-controller
       - POSTGRES-PASSWORD=alert
-      - scheduling.messenger.type=kafka
+      - controller.remoteEventsEnabled=true
       - kafka.topics.prefix=${KAFKA_TOPICS_PREFIX}
+      - kafka.topics.names.feedback=feedback
+      - kafka.topics.names.scheduler=scheduler
+      - kafka.topics.names.action=actions
+      - kafka.topics.names.notification=notification
+      - kafka.topics.names.dryRunRequest=dryrun-request
+      - kafka.topics.names.dryRunResult=dryrun-result
+      - kafka.topics.names.remoteEvents=events
     ports:
       - 8200:8200
     depends_on:
@@ -136,9 +144,6 @@ services:
       - POSTGRES-JDBC=jdbc:postgresql://postgres-operator:5434/operator?rewriteBatchedStatements=true
       - POSTGRES-USER=operator
       - POSTGRES-PASSWORD=operator
-      - SCHEDULERTOPIC=scheduler
-      - NOTIFICATIONTOPIC=notification
-      - ACTIONTOPIC=alerting-actions
       - spring.cloud.stream.kafka.binder.consumer-properties.max-poll-records=1
       - spring.cloud.stream.kafka.binder.consumer-properties.max-poll-interval-ms=600000000
       - MAX-TRANSACTION-RETRY-TIME-SEC=0
@@ -149,15 +154,22 @@ services:
       - MAX-POLL-RECORDS=1
       - MAX-POLL-INTERVAL-MS=120000
       - neo4j.transaction-timeout-sec=60
-      - kafka.topics.prefix=${KAFKA_TOPICS_PREFIX}
       - hume.security.encryption.engine=keystore
       - hume.security.encryption.keystore.file=/opt/hume-keystore
       - hume.security.encryption.keystore.password=changeit
       - hume.security.encryption.keystore.secret.alias=secret
+      - kafka.topics.prefix=${KAFKA_TOPICS_PREFIX}
+      - kafka.topics.names.feedback=feedback
+      - kafka.topics.names.scheduler=scheduler
+      - kafka.topics.names.action=actions
+      - kafka.topics.names.notification=notification
+      - kafka.topics.names.dryRunRequest=dryrun-request
+      - kafka.topics.names.dryRunResult=dryrun-result
     depends_on:
       - postgres-operator
     volumes:
       - "./config/keystore/hume-keystore:/opt/hume-keystore"
+    scale: 2
   zookeeper:
     image: bitnami/zookeeper:3-debian-10
     ports:
@@ -180,6 +192,7 @@ services:
       - KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP=INTERNAL:PLAINTEXT,EXTERNAL:PLAINTEXT
       - KAFKA_CFG_ADVERTISED_LISTENERS=INTERNAL://kafka:9093,EXTERNAL://kafka:9092
       - KAFKA_CFG_INTER_BROKER_LISTENER_NAME=INTERNAL
+      - KAFKA_CFG_NUM_PARTITIONS=2
     depends_on:
       - zookeeper
   kafdrop:
