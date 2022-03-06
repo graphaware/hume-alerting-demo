@@ -109,7 +109,6 @@ services:
       - "${HUME_FRONT_PORT:-8081}:8081"
   alerting-controller:
     image: docker.graphaware.com/internal/hume-alerting-controller:${HUME_VERSION}
-    # image: controller:coll-update
     environment:
       - BROKERS=kafka:9092
       - spring.mail.host=mail
@@ -169,7 +168,8 @@ services:
       - postgres-operator
     volumes:
       - "./config/keystore/hume-keystore:/opt/hume-keystore"
-    scale: 2
+    deploy:
+      replicas: 2
   zookeeper:
     image: bitnami/zookeeper:3-debian-10
     ports:
