@@ -1,0 +1,79 @@
+version: '3.7'
+services:
+  api:
+    environment:
+      - hume.logging.format=json
+    logging:
+      driver: "fluentd"
+      options:
+        fluentd-address: localhost:24224
+        tag: hume.core.api
+  orchestra:
+    logging:
+      driver: "fluentd"
+      options:
+        fluentd-address: localhost:24224
+        tag: hume.core.orchestra
+  web:
+    logging:
+      driver: "fluentd"
+      options:
+        fluentd-address: localhost:24224
+        tag: hume.core.web
+  alerting-controller:
+    environment:
+      - logging.format=json
+    logging:
+      driver: "fluentd"
+      options:
+        fluentd-address: localhost:24224
+        tag: alerting.controller
+  alerting-operator:
+    environment:
+      - logging.format=json
+    logging:
+      driver: "fluentd"
+      options:
+        fluentd-address: localhost:24224
+        tag: alerting.operator
+  # EFK
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:7.14.1
+    environment:
+      - xpack.security.enabled=false
+      - discovery.type=single-node
+      - bootstrap.memory_lock=true
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+      nofile:
+        soft: 65536
+        hard: 65536
+    cap_add:
+      - IPC_LOCK
+    volumes:
+      - "elasticsearch_data:/usr/share/elasticsearch/data"
+    ports:
+      - 9200:9200
+      - 9300:9300
+  kibana:
+    image: docker.elastic.co/kibana/kibana:7.14.1
+    environment:
+      - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
+    ports:
+      - 5601:5601
+    depends_on:
+      - elasticsearch
+  fluentd:
+    image: docker.graphaware.com/mirror/fluentd-elasticsearch:5.2.0
+    volumes:
+      - ./config/fluentd/conf:/fluentd/etc
+    links:
+      - "elasticsearch"
+    ports:
+      - "24224:24224"
+      - "24224:24224/udp"
+volumes:
+  elasticsearch_data:
