@@ -8,18 +8,24 @@ services:
       options:
         fluentd-address: localhost:24224
         tag: hume.core.api
+    profiles:
+      - hume
   orchestra:
     logging:
       driver: "fluentd"
       options:
         fluentd-address: localhost:24224
         tag: hume.core.orchestra
+    profiles:
+      - hume
   web:
     logging:
       driver: "fluentd"
       options:
         fluentd-address: localhost:24224
         tag: hume.core.web
+    profiles:
+      - hume
   alerting-controller:
     environment:
       - logging.format=json
@@ -28,6 +34,8 @@ services:
       options:
         fluentd-address: localhost:24224
         tag: alerting.controller
+    profiles:
+      - hume
   alerting-operator:
     environment:
       - logging.format=json
@@ -36,6 +44,8 @@ services:
       options:
         fluentd-address: localhost:24224
         tag: alerting.operator
+    profiles:
+      - hume
   # EFK
   elasticsearch:
     image: docker.elastic.co/elasticsearch/elasticsearch:7.14.1
@@ -58,6 +68,8 @@ services:
     ports:
       - 9200:9200
       - 9300:9300
+    profiles:
+      - efk
   kibana:
     image: docker.elastic.co/kibana/kibana:7.14.1
     environment:
@@ -66,6 +78,8 @@ services:
       - 5601:5601
     depends_on:
       - elasticsearch
+    profiles:
+      - efk
   fluentd:
     image: docker.graphaware.com/mirror/fluentd-elasticsearch:5.2.0
     volumes:
@@ -75,5 +89,7 @@ services:
     ports:
       - "24224:24224"
       - "24224:24224/udp"
+    profiles:
+      - efk
 volumes:
   elasticsearch_data:
