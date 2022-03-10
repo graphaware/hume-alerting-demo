@@ -25,7 +25,7 @@ services:
     volumes:
         - "./config/neo4j-config:/config"
   postgres:
-    image: docker.graphaware.com/internal/postgres:12.0
+    image: docker.graphaware.com/${RELEASE_REPOSITORY}/postgres:12.0
     environment:
       POSTGRES_PASSWORD: ${HUME_DB_PASSWORD:-pgsqls3cr3t}
       POSTGRES_USER: ${HUME_DB_USER:-hume}
@@ -58,7 +58,7 @@ services:
     volumes:
       - "hume_operator_data:/var/lib/postgresql/data"
   api:
-    image: docker.graphaware.com/internal/hume-api:${HUME_VERSION}
+    image: docker.graphaware.com/${RELEASE_REPOSITORY}/hume-api:${HUME_VERSION}
     ports:
       - "8080:8080"
     environment:
@@ -88,7 +88,7 @@ services:
       - "./config/hume:/init"
       - "./config/keystore/hume-keystore:/opt/hume-keystore"
   orchestra:
-    image: docker.graphaware.com/internal/hume-orchestra:${HUME_VERSION}
+    image: docker.graphaware.com/${RELEASE_REPOSITORY}/hume-orchestra:${HUME_VERSION}
     ports:
       - 8100:8100
       - 8666:8666
@@ -102,13 +102,13 @@ services:
       - ${HUME_PUBLIC_DIR:-./public}:/data
       - "./config/keystore/hume-keystore:/opt/hume-keystore"
   web:
-    image: docker.graphaware.com/internal/hume-web:${HUME_VERSION}
+    image: docker.graphaware.com/${RELEASE_REPOSITORY}/hume-web:${HUME_VERSION}
     environment:
       - HUME_API_URL=http://${HUME_ADVERTISED_ADDRESS:-localhost}:${HUME_API_PORT:-8080}
     ports:
       - "${HUME_FRONT_PORT:-8081}:8081"
   alerting-controller:
-    image: docker.graphaware.com/internal/hume-alerting-controller:${HUME_VERSION}
+    image: docker.graphaware.com/${RELEASE_REPOSITORY}/hume-alerting-controller:${HUME_VERSION}
     environment:
       - BROKERS=kafka:9092
       - spring.mail.host=mail
@@ -136,7 +136,7 @@ services:
     depends_on:
       - postgres-controller
   alerting-operator:
-    image: docker.graphaware.com/internal/hume-alerting-operator:${HUME_VERSION}
+    image: docker.graphaware.com/${RELEASE_REPOSITORY}/hume-alerting-operator:${HUME_VERSION}
     environment:
       - BROKERS=kafka:9092
       - ZKNODES=zookeeper:2181
