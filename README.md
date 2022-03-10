@@ -1,17 +1,23 @@
-# Alerting Demo
+# Hume Docker Setup
+
+## First steps
+
+- Make a copy of `.env.local` to `.env` , the `.env` file is ignored from git.
+
+- Copy your licence b64 string into the created `.env` file
 
 Run `docker-compose up -d`
+
+## Services deployed
+
+- Hume     -> localhost:8001
+- Neo4j    -> localhost:7474
+- Kafdrop  -> localhost:9100
 
 ## Login to Hume
 
 ```
 admin@hume.ga / password
-```
-
-Check the ecosystem variables
-
-```bash
-docker-compose exec postgres psql -U hume -c 'SELECT key, value FROM ecosystem_variable'
 ```
 
 ## Running with EFK
@@ -53,5 +59,13 @@ Attention, next command remove all volumes and data
 
 ```bash
 docker-compose down --volumes --remove-orphans
+```
+
+## Checking Ecosystem variables encryption
+
+Check the ecosystem variables
+
+```bash
+docker-compose exec postgres psql -U hume -c 'SELECT key, value FROM ecosystem_variable'
 ```
 
