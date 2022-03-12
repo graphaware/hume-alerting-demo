@@ -1,7 +1,7 @@
 version: '3.7'
 services:
   neo4j:
-    image: docker.graphaware.com/mirror/neo4j:${NEO4J_VERSION}
+    image: ${MIRROR_REPOSITORY}/neo4j:${NEO4J_VERSION}
     ports:
       - "${NEO4J_HTTP_PORT:-7474}:7474"
       - "${NEO4J_BOLT_PORT:-7687}:7687"
@@ -25,7 +25,7 @@ services:
     volumes:
         - "./config/neo4j-config:/config"
   postgres:
-    image: docker.graphaware.com/${RELEASE_REPOSITORY}/postgres:12.0
+    image: ${RELEASE_REPOSITORY}/postgres:12-alpine
     environment:
       POSTGRES_PASSWORD: ${HUME_DB_PASSWORD:-pgsqls3cr3t}
       POSTGRES_USER: ${HUME_DB_USER:-hume}
@@ -34,7 +34,7 @@ services:
     volumes:
       - "hume_postgres_data:/var/lib/postgresql/data"
   postgres-controller:
-    image: postgres:12
+    image: ${RELEASE_REPOSITORY}/postgres:12-alpine
     environment:
       POSTGRES_USER: alert-controller
       POSTGRES_PASSWORD: alert
@@ -46,7 +46,7 @@ services:
     volumes:
       - "hume_controller_data:/var/lib/postgresql/data"
   postgres-operator:
-    image: postgres:12
+    image: ${RELEASE_REPOSITORY}/postgres:12-alpine
     environment:
       POSTGRES_USER: operator
       POSTGRES_PASSWORD: operator
@@ -58,7 +58,7 @@ services:
     volumes:
       - "hume_operator_data:/var/lib/postgresql/data"
   api:
-    image: docker.graphaware.com/${RELEASE_REPOSITORY}/hume-api:${HUME_VERSION}
+    image: ${RELEASE_REPOSITORY}/hume-api:${HUME_VERSION}
     ports:
       - "8080:8080"
     environment:
@@ -88,7 +88,7 @@ services:
       - "./config/hume:/init"
       - "./config/keystore/hume-keystore:/opt/hume-keystore"
   orchestra:
-    image: docker.graphaware.com/${RELEASE_REPOSITORY}/hume-orchestra:${HUME_VERSION}
+    image: ${RELEASE_REPOSITORY}/hume-orchestra:${HUME_VERSION}
     ports:
       - 8100:8100
       - 8666:8666
@@ -102,13 +102,13 @@ services:
       - ${HUME_PUBLIC_DIR:-./public}:/data
       - "./config/keystore/hume-keystore:/opt/hume-keystore"
   web:
-    image: docker.graphaware.com/${RELEASE_REPOSITORY}/hume-web:${HUME_VERSION}
+    image: ${RELEASE_REPOSITORY}/hume-web:${HUME_VERSION}
     environment:
       - HUME_API_URL=http://${HUME_ADVERTISED_ADDRESS:-localhost}:${HUME_API_PORT:-8080}
     ports:
       - "${HUME_FRONT_PORT:-8081}:8081"
   alerting-controller:
-    image: docker.graphaware.com/${RELEASE_REPOSITORY}/hume-alerting-controller:${HUME_VERSION}
+    image: ${RELEASE_REPOSITORY}/hume-alerting-controller:${HUME_VERSION}
     environment:
       - BROKERS=kafka:9092
       - spring.mail.host=mail
@@ -136,7 +136,7 @@ services:
     depends_on:
       - postgres-controller
   alerting-operator:
-    image: docker.graphaware.com/${RELEASE_REPOSITORY}/hume-alerting-operator:${HUME_VERSION}
+    image: ${RELEASE_REPOSITORY}/hume-alerting-operator:${HUME_VERSION}
     environment:
       - BROKERS=kafka:9092
       - ZKNODES=zookeeper:2181
@@ -195,7 +195,7 @@ services:
     depends_on:
       - kafka
   mail:
-    image: docker.graphaware.com/mirror/mailhog/mailhog:v1.0.0
+    image: docker.graphaware.com/mirror/mailhog/mailhog:v1.0.1
     ports:
       - 1025:1025
       - 8025:8025
