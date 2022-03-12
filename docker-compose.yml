@@ -25,7 +25,7 @@ services:
     volumes:
         - "./config/neo4j-config:/config"
   postgres:
-    image: ${RELEASE_REPOSITORY}/postgres:12-alpine
+    image: ${MIRROR_REPOSITORY}/postgres:12-alpine
     environment:
       POSTGRES_PASSWORD: ${HUME_DB_PASSWORD:-pgsqls3cr3t}
       POSTGRES_USER: ${HUME_DB_USER:-hume}
@@ -34,7 +34,7 @@ services:
     volumes:
       - "hume_postgres_data:/var/lib/postgresql/data"
   postgres-controller:
-    image: ${RELEASE_REPOSITORY}/postgres:12-alpine
+    image: ${MIRROR_REPOSITORY}/postgres:12-alpine
     environment:
       POSTGRES_USER: alert-controller
       POSTGRES_PASSWORD: alert
@@ -46,7 +46,7 @@ services:
     volumes:
       - "hume_controller_data:/var/lib/postgresql/data"
   postgres-operator:
-    image: ${RELEASE_REPOSITORY}/postgres:12-alpine
+    image: ${MIRROR_REPOSITORY}/postgres:12-alpine
     environment:
       POSTGRES_USER: operator
       POSTGRES_PASSWORD: operator
