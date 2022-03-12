@@ -1,0 +1,42 @@
+version: '3.7'
+services:
+  node-exporter:
+      image: prom/node-exporter:v0.18.1
+      hostname: node-exporter
+      container_name: node-exporter
+      volumes:
+        - /proc:/host/proc:ro
+        - /sys:/host/sys:ro
+        - /:/rootfs:ro
+      command:
+        - '--path.procfs=/host/proc'
+        - '--path.sysfs=/host/sys'
+        - '--collector.filesystem.ignored-mount-points'
+        - '^(aufs|proc|nsfs|shm|cgroup|tmpfs|binfmt_misc|debugfs|devpts|fusectl|hugetlbfs|fuse.lxcfs|mqueue|pstore|securityfs|sysfs|autofs|devtmpfs|configfs)'
+  prometheus:
+    image: prom/prometheus
+    hostname: prometheus
+    container_name: prometheus
+    ports:
+      - 9090:9090
+    volumes:
+      - ./config/prometheus/:/etc/prometheus/
+    depends_on:
+      - node-exporter
+  grafana:
+    image: grafana/grafana:7.4.1
+    hostname: grafana
+    container_name: grafana
+    environment:
+      GF_INSTALL_PLUGINS: grafana-piechart-panel
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: password
+    ports:
+      - 3000:3000
+    volumes:
+      - ./config/grafana/provisioning:/etc/grafana/provisioning/
+      - grafana_data:/var/lib/grafana
+    depends_on:
+      - prometheus
+volumes:
+  grafana_data:
